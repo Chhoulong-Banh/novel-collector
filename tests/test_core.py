@@ -51,3 +51,42 @@ def test_chapter_id_not_generated_from_position():
     chapters = parse_directory(html, URL)
     assert [c.chapter_id for c in chapters] == ["5339798", "5340394"]
     assert [c.sequence for c in chapters] == [1, 2]
+
+from novel_collector.core import validate_chapter_url, collect_url_range
+
+def test_url_range_inclusive_offline(tmp_path):
+    md, report = collect_url_range(
+        "https://www.hetushu.com/book/999999/1002.html",
+        "https://www.hetushu.com/book/999999/1004.html",
+        out_dir=str(tmp_path), html=HTML)
+    import json
+    data = json.loads(report.read_text(encoding="utf-8"))
+    assert data["mode"] == "chapter_url_range"
+    assert [x["chapter_id"] for x in data["chapters"]] == ["1002", "1003", "1004"]
+    assert data["data_origin"] == "synthetic_demo"
+    assert "DEMO" in md.read_text(encoding="utf-8")
+
+def test_url_range_missing_boundary_fails(tmp_path):
+    with pytest.raises(CollectionError, match="Range unresolved"):
+        collect_url_range(
+            "https://www.hetushu.com/book/999999/1001.html",
+            "https://www.hetushu.com/book/999999/9999.html",
+            out_dir=str(tmp_path), html=HTML)
+
+def test_url_range_reversed_fails(tmp_path):
+    with pytest.raises(CollectionError, match="after end"):
+        collect_url_range(
+            "https://www.hetushu.com/book/999999/1004.html",
+            "https://www.hetushu.com/book/999999/1002.html",
+            out_dir=str(tmp_path), html=HTML)
+
+def test_url_range_cross_novel_fails(tmp_path):
+    with pytest.raises(CollectionError, match="same novel"):
+        collect_url_range(
+            "https://www.hetushu.com/book/999999/1001.html",
+            "https://www.hetushu.com/book/7633/5340394.html",
+            out_dir=str(tmp_path), html=HTML)
+
+def test_validate_chapter_url_rejects_non_chapter():
+    with pytest.raises(CollectionError):
+        validate_chapter_url("https://www.hetushu.com/book/7633/index.html")
