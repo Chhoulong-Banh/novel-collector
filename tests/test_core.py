@@ -90,3 +90,35 @@ def test_url_range_cross_novel_fails(tmp_path):
 def test_validate_chapter_url_rejects_non_chapter():
     with pytest.raises(CollectionError):
         validate_chapter_url("https://www.hetushu.com/book/7633/index.html")
+
+from novel_collector.washai import validate_directory as washai_directory, validate_chapter as washai_chapter, parse_page as washai_parse, collect_washai
+
+WASHAI_INDEX = "https://book.washai.net/book/indexList-1262260513468565364.html"
+WASHAI_START = "https://book.washai.net/book/1262260513468565364/2039351400477257412.html"
+WASHAI_END = "https://book.washai.net/book/1262260513468565364/2039351400477257414.html"
+WASHAI_HTML = (Path(__file__).parent.parent / "examples/washai_demo.html").read_text(encoding="utf-8")
+
+def test_washai_url_validation():
+    assert washai_directory("https://book.washai.net/book/1262260513468565364.html") == WASHAI_INDEX
+    assert washai_chapter(WASHAI_START).endswith("2039351400477257412.html")
+    with pytest.raises(CollectionError):
+        washai_chapter("https://evil.example/book/1262260513468565364/123.html")
+
+def test_washai_directory_fixture():
+    chapters, pages = washai_parse(WASHAI_HTML, WASHAI_INDEX)
+    assert len(chapters) == 3
+    assert pages == []
+    assert chapters[0].url == WASHAI_START
+
+def test_washai_range_offline(tmp_path):
+    md, report = collect_washai(start_url=WASHAI_START, end_url=WASHAI_END, html=WASHAI_HTML, out_dir=str(tmp_path))
+    import json
+    data = json.loads(report.read_text(encoding="utf-8"))
+    assert md.name.startswith("washai-")
+    assert data["source_adapter"] == "washai"
+    assert data["selected_count"] == 3
+    assert data["data_origin"] == "synthetic_demo"
+
+def test_washai_missing_end_fails(tmp_path):
+    with pytest.raises(CollectionError, match="Range unresolved"):
+        collect_washai(start_url=WASHAI_START, end_url="https://book.washai.net/book/1262260513468565364/999999.html", html=WASHAI_HTML, out_dir=str(tmp_path))
