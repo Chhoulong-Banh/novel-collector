@@ -122,3 +122,37 @@ def test_washai_range_offline(tmp_path):
 def test_washai_missing_end_fails(tmp_path):
     with pytest.raises(CollectionError, match="Range unresolved"):
         collect_washai(start_url=WASHAI_START, end_url="https://book.washai.net/book/1262260513468565364/999999.html", html=WASHAI_HTML, out_dir=str(tmp_path))
+
+from novel_collector.sequential import generate_candidates, export_candidates
+
+def test_sequential_start_at_twenty():
+    rows = generate_candidates(20, 30, "https://book.washai.net/book/1262260513468565364/2039351400477257431.html")
+    assert len(rows) == 11
+    assert rows[0]["chapter_number"] == 20
+    assert rows[0]["chapter_id"] == "2039351400477257431"
+    assert rows[-1]["chapter_number"] == 30
+    assert rows[-1]["chapter_id"] == "2039351400477257441"
+    assert all(not row["verified"] for row in rows)
+
+def test_sequential_chapter_600():
+    rows = generate_candidates(1, 600, "https://book.washai.net/book/1262260513468565364/2039351400477257412.html",
+        end_url="https://book.washai.net/book/1262260513468565364/2039351400477258011.html")
+    assert rows[-1]["chapter_id"] == "2039351400477258011"
+
+def test_sequential_end_mismatch():
+    with pytest.raises(CollectionError, match="End URL mismatch"):
+        generate_candidates(20, 30, "https://book.washai.net/book/1262260513468565364/2039351400477257431.html",
+            end_url="https://book.washai.net/book/1262260513468565364/2039351400477257999.html")
+
+def test_sequential_rejects_other_source():
+    with pytest.raises(CollectionError):
+        generate_candidates(1, 3, "https://www.hetushu.com/book/7633/5339798.html")
+
+def test_sequential_export_unverified(tmp_path):
+    md, report = export_candidates(20, 21, "https://book.washai.net/book/1262260513468565364/2039351400477257431.html", out_dir=tmp_path)
+    import json
+    data = json.loads(report.read_text(encoding="utf-8"))
+    assert data["verified_live"] is False
+    assert data["data_origin"] == "calculated_unverified"
+    assert data["candidate_count"] == 2
+    assert "UNVERIFIED" in md.read_text(encoding="utf-8")
