@@ -133,3 +133,50 @@ def collect(url: str, start: int = 1, end: int = 10, delay: float = 3, out_dir: 
     if not chapters:
         raise CollectionError("No matching chapter links found. Page structure may differ or access may be restricted.")
     return export(chapters, url, start, end, out_dir, demo=is_demo)
+
+def validate_chapter_url(url: str, expected_book: str | None = None) -> str:
+    """Validate a supplied full chapter URL without deriving its ID."""
+    parsed = urlparse(url.strip())
+    if (parsed.scheme != "https" or parsed.hostname not in {"www.hetushu.com", "hetushu.com"}
+            or parsed.port is not None or parsed.username or parsed.password
+            or parsed.query or parsed.fragment):
+        raise CollectionError("Expected a direct HTTPS Hetushu chapter URL.")
+    match = CHAPTER_RE.fullmatch(parsed.path)
+    if not match:
+        raise CollectionError("Expected /book/<book-id>/<chapter-id>.html")
+    if expected_book is not None and match.group("book") != expected_book:
+        raise CollectionError("Start and end chapter URLs must belong to the same novel.")
+    return f"https://www.hetushu.com{parsed.path}"
+
+def collect_url_range(start_url: str, end_url: str, delay: float = 3,
+                      out_dir: str = "output", html: str | None = None):
+    """Resolve inclusive boundary URLs against actual directory links.
+
+    No numeric-ID guessing, chapter text retrieval, or access bypass.
+    """
+    start_url = validate_chapter_url(start_url)
+    book_id = CHAPTER_RE.fullmatch(urlparse(start_url).path).group("book")
+    end_url = validate_chapter_url(end_url, expected_book=book_id)
+    directory_url = f"https://www.hetushu.com/book/{book_id}/index.html"
+    demo = html is not None
+    if html is None:
+        html = fetch_directory(directory_url, delay)
+    chapters = parse_directory(html, directory_url)
+    positions = {chapter.url: chapter.sequence for chapter in chapters}
+    missing = [label for label, value in (("start", start_url), ("end", end_url))
+               if value not in positions]
+    if missing:
+        raise CollectionError(
+            "Range unresolved: " + ", ".join(missing)
+            + " chapter URL(s) not found in the accessible directory. "
+            "No intermediate chapter IDs were generated."
+        )
+    start, end = positions[start_url], positions[end_url]
+    if start > end:
+        raise CollectionError("Start chapter appears after end chapter in directory order.")
+    md_path, report_path = export(chapters, directory_url, start, end, out_dir, demo=demo)
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    report.update({"mode": "chapter_url_range", "start_chapter_url": start_url,
+                   "end_chapter_url": end_url, "range_resolution": "directory_links"})
+    report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return md_path, report_path
