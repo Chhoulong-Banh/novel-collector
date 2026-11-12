@@ -1,0 +1,56 @@
+# Novel Collector V0.1.1
+
+Local, directory-only metadata collector for the Hetushu novel index URL pattern. It **does not download chapter text**. Use only where permitted by website rules and applicable law.
+
+## Requirements
+
+Python 3.10+.
+
+## Windows setup
+
+```powershell
+py -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+Then open http://localhost:8501 . Enter the index URL, chapter positions 1–10, and click **Discover and export directory**. Live output is written to `output/live/` and available as downloads.
+
+## Command-line usage
+
+```powershell
+python cli.py --url https://www.hetushu.com/book/7633/index.html --start 1 --end 10 --delay 3 --output output
+```
+
+## Offline demo (no network requests)
+
+```powershell
+python cli.py --offline-html examples/demo.html --start 1 --end 10
+pytest -q
+```
+
+The sample HTML uses fictional book ID `999999` and synthetic chapter IDs. Exports go to `output/demo/`, are prominently marked **DEMO — NOT VERIFIED**, and must never be treated as real Hetushu chapter links. Live results go to `output/live/`. Chapter IDs are extracted from the actual `href`, never generated from chapter numbers. The user-provided Chapter 1 URL ending in `5339798.html` is tested as a supplied fixture, not claimed to be live-verified.
+
+## Access and safety behavior
+
+- Only `https://www.hetushu.com/book/<id>/index.html` (or `hetushu.com`) is accepted.
+- Before live retrieval, the program requests `robots.txt` and fails closed if it is inaccessible or disallows the directory.
+- It does not follow redirects, bypass HTTP 403, solve CAPTCHAs, use proxies, or fetch individual chapter pages.
+- A minimum 3-second interval is enforced between the robots check and directory fetch; this is not a guarantee that any given request is allowed.
+- Chapter numbers are **directory positions**, not chapter numbers inferred from headings or URL IDs.
+- The parser is a conservative first-pass adapter. Real-site DOM markup has not been verified because the live directory returned 403 during development. It may need selector adjustments on a legitimately accessible page.
+- Volume labels are best-effort; unusual site markup may leave them empty. The report records counts and whether the requested range was fully found.
+- The app does not create or push to GitHub repositories.
+
+## Files
+
+- `app.py`: Streamlit dashboard
+- `cli.py`: command-line entry point
+- `novel_collector/core.py`: validation, robots checks, parsing, export
+- `examples/demo.html`: synthetic offline fixture
+- `tests/test_core.py`: automated tests
+
+## Next milestones
+
+Improve parser against authorized real HTML; add pagination only if observed; introduce additional adapters for other sites; add job progress and resume support. Full-text collection is out of scope for V0.1.
