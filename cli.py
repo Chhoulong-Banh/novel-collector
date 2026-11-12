@@ -3,10 +3,11 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 from novel_collector.core import collect, collect_url_range, CollectionError
+from novel_collector.washai import collect_washai
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Collect permitted directory metadata, not chapter text.")
-    parser.add_argument("--url", default="https://www.hetushu.com/book/7633/index.html")
+    parser.add_argument("--url", default="https://book.washai.net/book/indexList-1262260513468565364.html")
     parser.add_argument("--start", type=int, default=1)
     parser.add_argument("--end", type=int, default=10)
     parser.add_argument("--start-url", help="Full starting chapter URL (requires --end-url)")
@@ -20,12 +21,14 @@ def main() -> int:
     html = args.offline_html.read_text(encoding="utf-8") if args.offline_html else None
     try:
         if args.start_url:
-            md, report = collect_url_range(args.start_url, args.end_url, args.delay, args.output, html)
+            md, report = (collect_washai(start_url=args.start_url, end_url=args.end_url, delay=args.delay, out_dir=args.output, html=html) if "book.washai.net" in args.start_url else collect_url_range(args.start_url, args.end_url, args.delay, args.output, html))
         else:
             url = args.url
             if html is not None and url == parser.get_default("url"):
                 url = "https://www.hetushu.com/book/999999/index.html"
-            md, report = collect(url, args.start, args.end, args.delay, args.output, html)
+            if False:
+                url = "https://www.hetushu.com/book/999999/index.html"
+            md, report = (collect_washai(url, args.start, args.end, args.delay, args.output, html=html) if "book.washai.net" in url else collect(url, args.start, args.end, args.delay, args.output, html))
     except (CollectionError, OSError) as exc:
         parser.exit(status=1, message=f"Collection stopped: {exc}\n")
     print(f"Markdown: {md}\nReport: {report}")
