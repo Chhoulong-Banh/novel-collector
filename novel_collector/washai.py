@@ -161,15 +161,9 @@ def collect_washai(directory_url=None, start=1, end=10, delay=3, out_dir="output
         if start > end:
             raise CollectionError("Start chapter follows end chapter.")
     md, report = export(chapters, directory_url, start, end, out_dir, demo=html is not None)
-    # Existing export is Hetushu-specific; use a Washai-named output and correct source metadata.
-    book_id = INDEX.fullmatch(urlparse(directory_url).path).group(1)
-    new_md = md.with_name(f"washai-{book_id}-chapters-{start}-{end}.md")
-    new_report = report.with_name(f"washai-{book_id}-chapters-{start}-{end}.report.json")
-    md.rename(new_md)
     data = json.loads(report.read_text(encoding="utf-8"))
     data.update({"source_adapter": "washai", "mode": "chapter_url_range" if start_url else "directory_only"})
     if start_url:
         data.update({"start_chapter_url": start_url, "end_chapter_url": end_url})
-    new_report.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    report.unlink()
-    return new_md, new_report
+    report.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return md, report
