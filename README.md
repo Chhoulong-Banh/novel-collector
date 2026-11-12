@@ -1,6 +1,6 @@
-# Novel Collector V0.1.1
+# Novel Collector V0.2
 
-Local, directory-only metadata collector for the Hetushu novel index URL pattern. It **does not download chapter text**. Use only where permitted by website rules and applicable law.
+Local, directory-only metadata collector with additive chapter-URL-range mode for the Hetushu novel index URL pattern. It **does not download chapter text**. Use only where permitted by website rules and applicable law.
 
 ## Requirements
 
@@ -23,7 +23,7 @@ Then open http://localhost:8501 . Enter the index URL, chapter positions 1–10,
 python cli.py --url https://www.hetushu.com/book/7633/index.html --start 1 --end 10 --delay 3 --output output
 ```
 
-## Offline demo (no network requests)
+## New: full chapter URL boundaries (V0.2)\n\nThe dashboard now offers a second mode: **Start/end chapter URLs**. It retains the original directory-position mode. Both URLs must belong to the same novel, and both must appear in the accessible directory. The selected range is inclusive; intermediate IDs are never inferred numerically. If the directory returns 403 or either boundary is missing, the operation stops with a clear error. This mode exports chapter *metadata*, not chapter text.\n\n```powershell\npython cli.py --start-url https://www.hetushu.com/book/7633/5339798.html --end-url https://www.hetushu.com/book/7633/5340394.html\n```\n\nThe command requires permitted live directory access and may fail with HTTP 403.\n\n## Offline demo (no network requests)
 
 ```powershell
 python cli.py --offline-html examples/demo.html --start 1 --end 10
