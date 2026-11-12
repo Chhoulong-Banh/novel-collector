@@ -1,3 +1,31 @@
+# Novel Collector V0.4
+
+V0.4 adds a **third, offline-only collection mode for Washai**: sequential chapter URL candidates. Existing directory discovery and boundary URL lookup modes remain available for both sources.
+
+### Chapter 20 example
+
+Choose **书海阁 (Washai)** → **Sequential chapter IDs (Washai only)** and enter:
+
+- Start chapter number: `20`
+- End chapter number: `30`
+- Full start chapter URL: `https://book.washai.net/book/1262260513468565364/2039351400477257431.html`
+- Increment: `1`
+- Optional full end chapter URL: leave empty, or supply the expected URL for validation
+
+Formula: `chapter_id = start_url_id + (chapter_number - start_chapter_number) * increment`. This produces 11 candidate URLs, labelled Chapters 20–30, rather than incorrectly labelling them 1–11.
+
+CLI:
+
+```powershell
+python cli.py --sequential --start 20 --end 30 --start-url https://book.washai.net/book/1262260513468565364/2039351400477257431.html --increment 1
+```
+
+Outputs are saved to `output/candidates/`, distinctly marked **UNVERIFIED**, with `verified_live: false`. No network request is made in this mode, and calculated links must not be presented as discovered chapters. The optional end URL checks arithmetic consistency only, not live existence. The range is limited to 10,000 candidates.
+
+Run tests with `python -m pytest -q`. Live website parsing remains unverified.
+
+---
+
 # Novel Collector V0.3
 
 **Sample 1 — 书海阁 (Washai)** is now the default dashboard source. **Sample 2 — 和图书 (Hetushu)** remains available. Both directory-position mode and full start/end chapter URL mode remain available.
