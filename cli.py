@@ -26,8 +26,6 @@ def main() -> int:
             url = args.url
             if html is not None and url == parser.get_default("url"):
                 url = "https://www.hetushu.com/book/999999/index.html"
-            if False:
-                url = "https://www.hetushu.com/book/999999/index.html"
             md, report = (collect_washai(url, args.start, args.end, args.delay, args.output, html=html) if "book.washai.net" in url else collect(url, args.start, args.end, args.delay, args.output, html))
     except (CollectionError, OSError) as exc:
         parser.exit(status=1, message=f"Collection stopped: {exc}\n")
