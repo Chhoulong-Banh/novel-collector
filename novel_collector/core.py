@@ -110,8 +110,14 @@ def export(chapters: list[Chapter], url: str, start: int, end: int, out_dir: str
         raise CollectionError("No chapters found in the selected range; no export produced.")
     out = (Path(out_dir) / ("demo" if demo else "live")).resolve()
     out.mkdir(parents=True, exist_ok=True)
-    book_id = BOOK_RE.fullmatch(urlparse(validate_url(url)).path).group("book")
-    base = f"hetushu-{book_id}-chapters-{start}-{end}"
+    if urlparse(url).hostname == "book.washai.net":
+        from .washai import validate_directory
+        validated = validate_directory(url)
+        book_id = re.fullmatch(r"/book/indexList-(\d+)\.html", urlparse(validated).path).group(1)
+        base = f"washai-{book_id}-chapters-{start}-{end}"
+    else:
+        book_id = BOOK_RE.fullmatch(urlparse(validate_url(url)).path).group("book")
+        base = f"hetushu-{book_id}-chapters-{start}-{end}"
     md_path = out / f"{base}.md"
     report_path = out / f"{base}.report.json"
     lines = ["# " + ("DEMO — NOT VERIFIED — Synthetic chapter directory" if demo else "Novel chapter directory"), "", "**DEMO DATA — NOT REAL CHAPTER LINKS**" if demo else "**LIVE DIRECTORY METADATA — NOT CHAPTER TEXT**", "", f"Source: {url}", f"Selected directory positions: {start}–{end}", "", "| Position | Volume | Chapter title | Link |", "|---:|---|---|---|"]
