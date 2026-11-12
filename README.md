@@ -1,4 +1,29 @@
-# Novel Collector V0.2
+# Novel Collector V0.3
+
+**Sample 1 — 书海阁 (Washai)** is now the default dashboard source. **Sample 2 — 和图书 (Hetushu)** remains available. Both directory-position mode and full start/end chapter URL mode remain available.
+
+## Washai sample
+
+- Directory: `https://book.washai.net/book/indexList-1262260513468565364.html`
+- Start: `https://book.washai.net/book/1262260513468565364/2039351400477257412.html`
+- End: `https://book.washai.net/book/1262260513468565364/2039351400477258011.html`
+
+Run the dashboard with `streamlit run app.py`, choose Washai, and start with directory positions 1–10.
+
+The Washai adapter follows **explicit pagination links** it discovers in directory HTML (up to 20 pages by default). It does not generate chapter IDs or chapter text. It stops on HTTP 403, inaccessible robots.txt, disallowed pages, or unresolved range boundaries. Pagination selectors and live-site HTML have **not** been independently verified; unusual pagination markup may require a parser update. If only part of a directory is discovered, the requested boundary range can fail rather than silently inventing links.
+
+Offline parser fixture:
+
+```powershell
+python -m pytest -q
+python cli.py --url https://book.washai.net/book/indexList-1262260513468565364.html --start 1 --end 3 --offline-html examples/washai_demo.html
+```
+
+Offline output is marked DEMO and does not establish live-site success.
+
+---
+
+## Previous V0.2 documentation
 
 Local, directory-only metadata collector with additive chapter-URL-range mode for the Hetushu novel index URL pattern. It **does not download chapter text**. Use only where permitted by website rules and applicable law.
 
