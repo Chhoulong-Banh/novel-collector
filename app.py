@@ -8,7 +8,7 @@ from novel_collector.sequential import export_candidates, generate_candidates
 
 st.set_page_config(page_title="Novel Collector V0.4", page_icon="📚")
 st.title("Novel Collector V0.4")
-st.caption("Directory metadata only. Existing directory mode is preserved; no chapter text is downloaded.")
+st.caption("Directory metadata or explicitly unverified URL candidates. No chapter text is downloaded.")
 source = st.selectbox("Novel source", ["书海阁 (Washai) — Sample 1", "和图书 (Hetushu) — Sample 2"])
 washai = source.startswith("书海阁")
 mode = st.radio("Collection mode", ["Directory discovery (existing)", "Start/end chapter URLs (existing)"] + (["Sequential chapter IDs (Washai only)"] if washai else []))
@@ -41,9 +41,9 @@ else:
         st.error(str(exc))
 st.selectbox("Export format", ["Markdown (.md)"], disabled=True)
 st.selectbox("Storage", ["Local folder"], disabled=True)
-delay = st.slider("Minimum request interval (seconds)", min_value=3, max_value=15, value=3)
-st.info("HTTP 403 and disallowed robots.txt rules stop live collection. No bypass attempted.")
-if st.button("Discover and export directory", type="primary"):
+delay = st.slider("Minimum request interval (seconds)", min_value=3, max_value=15, value=3) if not mode.startswith("Sequential") else 3
+st.info("Sequential mode is offline and generates unverified candidates only." if mode.startswith("Sequential") else "HTTP 403 and disallowed robots.txt rules stop live collection. No bypass attempted.")
+if st.button("Generate unverified candidates" if mode.startswith("Sequential") else "Discover and export directory", type="primary"):
     try:
         if mode.startswith("Directory"):
             md, report = (collect_washai(url, int(start), int(end), float(delay)) if washai else collect(url, int(start), int(end), float(delay)))
